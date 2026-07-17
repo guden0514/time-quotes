@@ -106,6 +106,47 @@
   .dotind{width:6px;height:6px;border-radius:50%; background:rgba(255,255,255,0.2); cursor:pointer; transition:background 0.2s;}
   .dotind.active{background:var(--accent);}
 
+  /* 미디어 플레이어 */
+  .player{display:flex; flex-direction:column; align-items:center; width:100%; max-width:220px;}
+  .album{
+    width:120px; height:120px; border-radius:12px; overflow:hidden;
+    background:rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0; position:relative;
+  }
+  .album img{width:100%; height:100%; object-fit:cover;}
+  #ytHolder{position:absolute; inset:0; display:none;}
+  #ytHolder iframe{width:100%; height:100%; border:none;}
+  .album.has-video #ytHolder{display:block;}
+  .album.has-video .album-ph{display:none;}
+  .album-ph{font-size:36px; color:rgba(255,255,255,0.25);}
+  .tr-title{
+    margin-top:10px; font-size:14px; font-weight:700; color:var(--ink);
+    max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-family:'Noto Sans KR',sans-serif;
+  }
+  .tr-artist{
+    margin-top:2px; font-size:11px; color:var(--ink-dim);
+    max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-family:'Noto Sans KR',sans-serif;
+  }
+  .progress{
+    width:100%; height:4px; border-radius:2px; background:rgba(255,255,255,0.15);
+    margin-top:12px; cursor:pointer; position:relative;
+  }
+  .progress-fill{height:100%; width:0%; border-radius:2px; background:var(--ink); transition:width 0.2s linear;}
+  .times{
+    width:100%; display:flex; justify-content:space-between; margin-top:4px;
+    font-size:9px; color:var(--ink-dim); font-family:'Inter',sans-serif;
+  }
+  .controls{display:flex; align-items:center; gap:26px; margin-top:10px;}
+  .mbtn{
+    background:none; border:none; padding:6px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .mbtn svg{width:22px; height:22px; fill:var(--ink);}
+  .mbtn.big svg{width:30px; height:30px;}
+  .mbtn:active svg{fill:var(--ink-dim);}
+
   /* 인용문 카드 */
   .quotecard{
     margin-top:40px; width:100%; background:transparent;
@@ -200,6 +241,18 @@
     .datebig .weekday{font-size:20px; letter-spacing:3px; margin-bottom:6px;}
     .datebig .daynum{font-size:145px;}
     #calendarScreen{width:100%; display:flex; justify-content:center; align-items:center;}
+    #mediaScreen{width:100%; display:flex; justify-content:center; align-items:center;}
+    .player{max-width:180px;}
+    .album{width:76px; height:76px; border-radius:9px;}
+    .album-ph{font-size:24px;}
+    .tr-title{margin-top:6px; font-size:11px;}
+    .tr-artist{font-size:9px;}
+    .progress{margin-top:7px; height:3px;}
+    .times{font-size:8px; margin-top:3px;}
+    .controls{gap:20px; margin-top:6px;}
+    .mbtn{padding:4px;}
+    .mbtn svg{width:17px; height:17px;}
+    .mbtn.big svg{width:23px; height:23px;}
     .calendar{align-items:center; max-width:none;}
     .cal-grid{width:185px; gap:3px 0;}
     .cal-wd{font-size:10px; padding-bottom:3px;}
@@ -246,11 +299,36 @@
           <div class="cal-grid" id="calGrid"></div>
         </div>
       </div>
+      <div class="screen hidden" id="mediaScreen">
+        <div class="player" id="player">
+          <div class="album" id="albumArt">
+            <div id="ytHolder"></div>
+            <span class="album-ph" id="albumPh">♪</span>
+          </div>
+          <div class="tr-title" id="trackTitle">유튜브 음악 추가</div>
+          <div class="tr-artist" id="trackArtist">여기를 탭해 링크 붙여넣기</div>
+          <div class="progress" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="times"><span id="curTime">0:00</span><span id="remTime">-0:00</span></div>
+          <div class="controls">
+            <button class="mbtn" id="btnPrev" aria-label="이전 곡">
+              <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>
+            </button>
+            <button class="mbtn big" id="btnPlay" aria-label="재생/일시정지">
+              <svg id="iconPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <svg id="iconPause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+            </button>
+            <button class="mbtn" id="btnNext" aria-label="다음 곡">
+              <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="dots">
       <span class="dotind active" data-view="digitalScreen"></span>
       <span class="dotind" data-view="clockScreen"></span>
       <span class="dotind" data-view="calendarScreen"></span>
+      <span class="dotind" data-view="mediaScreen"></span>
     </div>
   </div>
 
@@ -325,6 +403,25 @@
     <div class="rowbtns">
       <button class="btn ghost" data-close>취소</button>
       <button class="btn primary" id="importBtn">가져오기</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="ytSheet">
+  <div class="sheet-inner">
+    <button class="close-sheet" data-close>✕</button>
+    <h3>유튜브 링크로 재생</h3>
+    <div class="import-help">
+      유튜브/유튜브뮤직 앱에서 <b style="color:var(--ink)">공유 → 링크 복사</b> 후 붙여넣으세요.<br>
+      재생목록 링크를 넣으면 이전/다음 곡 이동도 가능해요.
+    </div>
+    <div class="field">
+      <input type="text" id="ytUrl" placeholder="https://music.youtube.com/watch?v=...">
+    </div>
+    <div class="import-result" id="ytResult"></div>
+    <div class="rowbtns">
+      <button class="btn ghost" data-close>취소</button>
+      <button class="btn primary" id="ytLoadBtn">재생</button>
     </div>
   </div>
 </div>
@@ -578,7 +675,7 @@ buildCalendar();
 
 // ---------- 시계/날짜 화면 전환 ----------
 const screensEl = document.getElementById('screens');
-const screenIds = ['digitalScreen','clockScreen','calendarScreen'];
+const screenIds = ['digitalScreen','clockScreen','calendarScreen','mediaScreen'];
 let activeScreen = 0;
 function showScreen(idx, dir){
   const next = (idx+screenIds.length)%screenIds.length;
@@ -627,7 +724,7 @@ document.getElementById('fabAdd').onclick = ()=> addSheet.classList.add('open');
 document.getElementById('openList').onclick = ()=> { renderList(); listSheet.classList.add('open'); };
 document.getElementById('openImport').onclick = ()=> { importSheet.classList.add('open'); };
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{
-  addSheet.classList.remove('open'); listSheet.classList.remove('open'); importSheet.classList.remove('open');
+  document.querySelectorAll('.sheet').forEach(s=> s.classList.remove('open'));
 });
 
 // ---------- 추가 저장 ----------
@@ -770,6 +867,184 @@ document.getElementById('fileInput').onchange = async (e)=>{
 };
 
 loadUserQuotes();
+
+// ---------- 미디어 플레이어 (유튜브 IFrame API) ----------
+const albumArt = document.getElementById('albumArt');
+const albumPh = document.getElementById('albumPh');
+const trackTitle = document.getElementById('trackTitle');
+const trackArtist = document.getElementById('trackArtist');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const curTimeEl = document.getElementById('curTime');
+const remTimeEl = document.getElementById('remTime');
+const btnPlay = document.getElementById('btnPlay');
+const btnPrev = document.getElementById('btnPrev');
+const btnNext = document.getElementById('btnNext');
+const iconPlay = document.getElementById('iconPlay');
+const iconPause = document.getElementById('iconPause');
+const playerEl = document.getElementById('player');
+const ytSheet = document.getElementById('ytSheet');
+const ytUrlInput = document.getElementById('ytUrl');
+const ytResult = document.getElementById('ytResult');
+
+let ytPlayer = null, ytReady = false, hasVideo = false, isPlaylist = false;
+let pendingUrl = null;
+
+// 플레이어 안에서의 터치/클릭이 화면 전환으로 번지지 않게 차단
+playerEl.addEventListener('click', e=> e.stopPropagation());
+playerEl.addEventListener('touchend', e=> e.stopPropagation());
+
+function fmtTime(sec){
+  if(!isFinite(sec)) return '0:00';
+  sec = Math.max(0, Math.floor(sec));
+  return Math.floor(sec/60) + ':' + String(sec%60).padStart(2,'0');
+}
+
+// 유튜브 IFrame API 로드
+(function(){
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+})();
+window.onYouTubeIframeAPIReady = function(){
+  ytPlayer = new YT.Player('ytHolder', {
+    width:'100%', height:'100%',
+    playerVars:{ playsinline:1, controls:0, rel:0, modestbranding:1 },
+    events:{
+      onReady: ()=>{ ytReady = true; if(pendingUrl){ const u=pendingUrl; pendingUrl=null; loadFromUrl(u); } },
+      onStateChange: onYtState
+    }
+  });
+};
+
+function parseYtUrl(raw){
+  const s = raw.trim();
+  if(/^[\w-]{11}$/.test(s)) return {videoId:s, listId:null};
+  try{
+    const u = new URL(s);
+    const listId = u.searchParams.get('list');
+    let videoId = u.searchParams.get('v');
+    if(!videoId && u.hostname.includes('youtu.be')) videoId = u.pathname.replace('/','').split('?')[0];
+    return {videoId, listId};
+  }catch(e){ return {videoId:null, listId:null}; }
+}
+
+function loadFromUrl(url){
+  if(!ytReady){ pendingUrl = url; return true; }
+  const {videoId, listId} = parseYtUrl(url);
+  if(listId){
+    ytPlayer.loadPlaylist({list:listId, listType:'playlist', index: 0});
+    isPlaylist = true;
+  } else if(videoId){
+    ytPlayer.loadVideoById(videoId);
+    isPlaylist = false;
+  } else {
+    return false;
+  }
+  hasVideo = true;
+  albumArt.classList.add('has-video');
+  return true;
+}
+
+function updateTrackInfo(){
+  if(!ytPlayer || !ytPlayer.getVideoData) return;
+  try{
+    const d = ytPlayer.getVideoData();
+    if(d && d.title){
+      trackTitle.textContent = d.title;
+      trackArtist.textContent = d.author || '';
+    }
+  }catch(e){}
+}
+
+function onYtState(e){
+  if(e.data === YT.PlayerState.PLAYING){
+    iconPlay.style.display='none'; iconPause.style.display='block';
+    updateTrackInfo();
+  } else {
+    iconPlay.style.display='block'; iconPause.style.display='none';
+  }
+  if(e.data === YT.PlayerState.ENDED && !isPlaylist){
+    iconPlay.style.display='block'; iconPause.style.display='none';
+  }
+}
+
+// 진행바 갱신 (0.5초마다)
+setInterval(()=>{
+  if(!hasVideo || !ytPlayer || !ytPlayer.getDuration) return;
+  try{
+    const d = ytPlayer.getDuration(), c = ytPlayer.getCurrentTime();
+    if(isFinite(d) && d>0){
+      progressFill.style.width = (c/d*100) + '%';
+      curTimeEl.textContent = fmtTime(c);
+      remTimeEl.textContent = '-' + fmtTime(d-c);
+    }
+  }catch(e){}
+}, 500);
+
+// 링크 시트 열기: 제목/아티스트 영역 또는 (영상 없을 때) 앨범 영역 탭
+function openYtSheet(e){
+  if(e) e.stopPropagation();
+  ytResult.textContent='';
+  ytSheet.classList.add('open');
+  setTimeout(()=> ytUrlInput.focus(), 250);
+}
+trackTitle.addEventListener('click', openYtSheet);
+trackArtist.addEventListener('click', openYtSheet);
+albumArt.addEventListener('click', e=>{
+  e.stopPropagation();
+  if(!hasVideo) openYtSheet();
+});
+
+document.getElementById('ytLoadBtn').addEventListener('click', ()=>{
+  const url = ytUrlInput.value;
+  if(!url.trim()){ ytResult.style.color='#FF6B6B'; ytResult.textContent='링크를 입력해주세요.'; return; }
+  const ok = loadFromUrl(url);
+  if(ok===false){
+    ytResult.style.color='#FF6B6B';
+    ytResult.textContent='유튜브 링크를 인식하지 못했어요. 공유 링크를 그대로 붙여넣어주세요.';
+    return;
+  }
+  ytUrlInput.value='';
+  ytSheet.classList.remove('open');
+});
+
+btnPlay.addEventListener('click', e=>{
+  e.stopPropagation();
+  if(!hasVideo){ openYtSheet(); return; }
+  try{
+    const st = ytPlayer.getPlayerState();
+    if(st === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+    else ytPlayer.playVideo();
+  }catch(err){}
+});
+btnPrev.addEventListener('click', e=>{
+  e.stopPropagation();
+  if(!hasVideo) return;
+  try{
+    if(ytPlayer.getCurrentTime() > 3 || !isPlaylist) ytPlayer.seekTo(0, true);
+    else ytPlayer.previousVideo();
+  }catch(err){}
+});
+btnNext.addEventListener('click', e=>{
+  e.stopPropagation();
+  if(!hasVideo) return;
+  try{
+    if(isPlaylist) ytPlayer.nextVideo();
+  }catch(err){}
+});
+
+progressBar.addEventListener('click', e=>{
+  e.stopPropagation();
+  if(!hasVideo) return;
+  try{
+    const d = ytPlayer.getDuration();
+    if(!isFinite(d) || d<=0) return;
+    const rect = progressBar.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    ytPlayer.seekTo(ratio * d, true);
+  }catch(err){}
+});
 </script>
 <script>
 if('serviceWorker' in navigator){
