@@ -413,16 +413,22 @@
     <h3>유튜브 링크로 재생</h3>
     <div class="import-help">
       유튜브/유튜브뮤직 앱에서 <b style="color:var(--ink)">공유 → 링크 복사</b> 후 붙여넣으세요.<br>
-      재생목록 링크를 넣으면 이전/다음 곡 이동도 가능해요.
+      한 곡만 넣으면 <b style="color:var(--ink)">관련곡이 자동으로 이어서</b> 재생돼요 (믹스).<br>
+      여러 링크를 줄바꿈으로 넣으면 그 순서대로 이어 들을 수 있어요.
     </div>
     <div class="field">
-      <input type="text" id="ytUrl" placeholder="https://music.youtube.com/watch?v=...">
+      <textarea id="ytUrl" style="min-height:80px" placeholder="https://music.youtube.com/watch?v=...
+https://music.youtube.com/watch?v=... (여러 곡 가능)"></textarea>
     </div>
     <div class="import-result" id="ytResult"></div>
     <div class="rowbtns">
-      <button class="btn ghost" data-close>취소</button>
-      <button class="btn primary" id="ytLoadBtn">재생</button>
+      <button class="btn ghost" id="ytAddBtn">대기열에 추가</button>
+      <button class="btn primary" id="ytLoadBtn">바로 재생</button>
     </div>
+    <div class="import-help" style="margin-top:16px; border-top:1px solid rgba(255,255,255,0.08); padding-top:12px;">
+      대기열 — 한 곡이 끝나면 자동으로 다음 곡이 재생돼요 (저장됨)
+    </div>
+    <div class="mylist" id="queueList"></div>
   </div>
 </div>
 
@@ -929,15 +935,45 @@ function parseYtUrl(raw){
   }catch(e){ return {videoId:null, listId:null}; }
 }
 
-function loadFromUrl(url){
-  if(!ytReady){ pendingUrl = url; return true; }
-  const {videoId, listId} = parseYtUrl(url);
-  if(listId){
-    ytPlayer.loadPlaylist({list:listId, listType:'playlist', index: 0});
+function loadFromUrl(rawInput){
+  if(!ytReady){ pendingUrl = rawInput; return true; }
+  // 여러 줄 입력 지원: 각 줄을 개별 링크로 파싱
+  const lines = rawInput.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+  const videoIds = [];
+  let firstListId = null;
+  for(const line of lines){
+    const {videoId, listId} = parseYtUrl(line);
+    if(listId && !firstListId) firstListId = listId;
+    if(videoId) videoIds.push(videoId);
+  }
+
+  if(firstListId){
+    // 재생목록 링크 → 그 목록으로 연속 재생
+    ytPlayer.loadPlaylist({list:firstListId, listType:'playlist', index:0});
     isPlaylist = true;
-  } else if(videoId){
-    ytPlayer.loadVideoById(videoId);
-    isPlaylist = false;
+  } else if(videoIds.length > 1){
+    // 여러 곡 링크 → 대기열로 순서대로 이어 재생
+    ytPlayer.loadPlaylist(videoIds);
+    isPlaylist = true;
+  } else if(videoIds.length === 1){
+    // 한 곡 → 유튜브 자동 생성 믹스(관련곡 연속재생) 시도
+    const vid = videoIds[0];
+    ytPlayer.loadPlaylist({list:'RD'+vid, listType:'playlist', index:0});
+    isPlaylist = true;
+    // 믹스가 지원되지 않는 곡이면 몇 초 후 단일 재생으로 대체
+    setTimeout(()=>{
+      try{
+        const pl = ytPlayer.getPlaylist();
+        const st = ytPlayer.getPlayerState();
+        const stuck = (st === YT.PlayerState.UNSTARTED || st === -1 || st === YT.PlayerState.CUED);
+        if(!pl || pl.length <= 1 || stuck){
+          if(stuck || !pl || pl.length<=1){
+            ytPlayer.loadVideoById(vid);
+            isPlaylist = false;
+          }
+        }
+      }catch(e){}
+    }, 3500);
   } else {
     return false;
   }
