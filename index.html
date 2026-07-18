@@ -979,9 +979,13 @@ const WX_CODES = {
 };
 
 let wxLoaded = false;
+let wxLastFetch = 0;
+let wxTimer = null;
+const WX_REFRESH_MS = 30 * 60 * 1000; // 30분
+
 async function loadWeather(){
   if(!navigator.geolocation){ wxDesc.textContent='위치 지원 안 됨'; return; }
-  wxDesc.textContent = '위치 확인 중…';
+  if(!wxLoaded) wxDesc.textContent = '위치 확인 중…';
   navigator.geolocation.getCurrentPosition(async (pos)=>{
     const {latitude, longitude} = pos.coords;
     try{
@@ -1002,13 +1006,25 @@ async function loadWeather(){
       }
       loadLocationName(latitude, longitude);
       wxLoaded = true;
+      wxLastFetch = Date.now();
+      // 30분마다 자동 갱신 타이머 (한 번만 설정)
+      if(!wxTimer){
+        wxTimer = setInterval(()=>{ if(!document.hidden) loadWeather(); }, WX_REFRESH_MS);
+      }
     }catch(e){
-      wxDesc.textContent = '날씨 불러오기 실패';
+      if(!wxLoaded) wxDesc.textContent = '날씨 불러오기 실패';
     }
   }, (err)=>{
-    wxDesc.textContent = (err.code===1) ? '위치 권한 거부됨' : '위치 확인 실패';
+    if(!wxLoaded) wxDesc.textContent = (err.code===1) ? '위치 권한 거부됨' : '위치 확인 실패';
   }, {enableHighAccuracy:false, timeout:10000, maximumAge:600000});
 }
+
+// 화면을 다시 켜거나(백그라운드→포그라운드) 날씨 탭 재방문 시, 마지막 갱신이 오래됐으면 새로고침
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden && wxLoaded && Date.now() - wxLastFetch > WX_REFRESH_MS){
+    loadWeather();
+  }
+});
 
 // 위치 이름 조회 (BigDataCloud 무료 역지오코딩, 키 불필요)
 async function loadLocationName(lat, lon){
