@@ -737,16 +737,18 @@ screensEl.addEventListener('click', ()=>{
   if(Date.now() - lastSwipeTs < 500) return; // 스와이프 직후 중복 클릭 무시
   showScreen(activeScreen+1, 'left');
 });
-let touchY=null;
-screensEl.addEventListener('touchstart', e=> touchY = e.touches[0].clientY, {passive:true});
+let touchY=null, touchX=null;
+screensEl.addEventListener('touchstart', e=>{ touchY = e.touches[0].clientY; touchX = e.touches[0].clientX; }, {passive:true});
 screensEl.addEventListener('touchend', e=>{
   if(touchY===null) return;
   const dy = e.changedTouches[0].clientY - touchY;
-  if(Math.abs(dy) > 40){
+  const dx = e.changedTouches[0].clientX - touchX;
+  // 세로 이동이 25px 이상이고 가로보다 크면 화면 전환 (양방향 동일 기준)
+  if(Math.abs(dy) > 25 && Math.abs(dy) >= Math.abs(dx)){
     showScreen(activeScreen + (dy<0?1:-1), dy<0?'left':'right');
     lastSwipeTs = Date.now();
   }
-  touchY=null;
+  touchY=null; touchX=null;
 });
 
 // 미디어 화면 등에서 버튼이 터치를 가로채도 스와이프 되도록 가장자리 전용 존
@@ -758,7 +760,7 @@ screensEl.addEventListener('touchend', e=>{
     const dy = e.changedTouches[0].clientY - zy;
     const dx = e.changedTouches[0].clientX - zx;
     // 세로 스와이프가 우세하면 화면 전환
-    if(Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)){
+    if(Math.abs(dy) > 25 && Math.abs(dy) >= Math.abs(dx)){
       showScreen(activeScreen + (dy<0?1:-1), dy<0?'left':'right');
       lastSwipeTs = Date.now();
     } else if(Math.abs(dy) <= 8 && Math.abs(dx) <= 8){
