@@ -106,6 +106,12 @@
   .dotind{width:6px;height:6px;border-radius:50%; background:rgba(255,255,255,0.2); cursor:pointer; transition:background 0.2s;}
   .dotind.active{background:var(--accent);}
 
+  /* 스와이프 전용 영역 (미디어 화면에서 버튼 때문에 스와이프가 막히는 것 방지) */
+  .swipe-zone{position:absolute; top:0; bottom:0; width:0; z-index:5; display:none;}
+  .swipe-left{left:0;}
+  .swipe-right{right:0;}
+  .screens.media-active .swipe-zone{display:block; width:16%;}
+
   /* 미디어 플레이어 */
   .player{display:flex; flex-direction:column; align-items:center; width:100%; max-width:220px;}
   .album{
@@ -266,13 +272,13 @@
     .mbtn.big svg{width:12cqh; height:12cqh;}
     .calendar{align-items:center; max-width:none;}
     .cal-grid{width:min(100%, 66vh); gap:0.8vh 0;}
-    .cal-grid{width:100cqw; gap:1.1cqh 0;}
+    .cal-grid{width:90cqw; gap:1cqh 0;}
     .cal-wd{font-size:clamp(8px, 3.2vh, 12px); padding-bottom:0.8vh;}
-    .cal-wd{font-size:5.2cqh; padding-bottom:1cqh;}
+    .cal-wd{font-size:4.7cqh; padding-bottom:0.9cqh;}
     .cal-day{width:min(28px, 8.6vh); height:min(28px, 8.6vh); font-size:clamp(9px, 4.2vh, 15px);}
-    .cal-day{width:12.4cqw; height:12.4cqw; font-size:6.6cqh;}
+    .cal-day{width:11.2cqw; height:11.2cqw; font-size:5.9cqh;}
     .cal-title{font-size:clamp(10px, 4.6vh, 16px); margin-bottom:1vh;}
-    .cal-title{font-size:6.8cqh; margin-bottom:1.2cqh;}
+    .cal-title{font-size:6.1cqh; margin-bottom:1.1cqh;}
     .badge{display:none;}
     .dots{display:none;}
     .btnrow{display:none;}
@@ -289,6 +295,8 @@
 <div class="app">
   <div class="leftcol">
     <div class="screens" id="screens">
+      <div class="swipe-zone swipe-left" id="swipeLeft"></div>
+      <div class="swipe-zone swipe-right" id="swipeRight"></div>
       <div class="screen" id="digitalScreen">
         <div class="datebig">
           <div class="weekday" id="weekdayStr">FRI<span class="month" id="monthStr">JUL</span></div>
@@ -720,6 +728,7 @@ function showScreen(idx, dir){
   }
   setTimeout(()=>{ outEl.classList.remove('from-left','from-right'); }, 460);
   activeScreen = next;
+  screensEl.classList.toggle('media-active', screenIds[activeScreen] === 'mediaScreen');
   document.querySelectorAll('.dotind').forEach((d,i)=> d.classList.toggle('active', i===activeScreen));
 }
 document.querySelectorAll('.dotind').forEach((d,i)=> d.onclick = ()=> showScreen(i));
@@ -738,6 +747,28 @@ screensEl.addEventListener('touchend', e=>{
     lastSwipeTs = Date.now();
   }
   touchY=null;
+});
+
+// 미디어 화면 등에서 버튼이 터치를 가로채도 스와이프 되도록 가장자리 전용 존
+[document.getElementById('swipeLeft'), document.getElementById('swipeRight')].forEach(zone=>{
+  let zy=null, zx=null;
+  zone.addEventListener('touchstart', e=>{ zy=e.touches[0].clientY; zx=e.touches[0].clientX; }, {passive:true});
+  zone.addEventListener('touchend', e=>{
+    if(zy===null) return;
+    const dy = e.changedTouches[0].clientY - zy;
+    const dx = e.changedTouches[0].clientX - zx;
+    // 세로 스와이프가 우세하면 화면 전환
+    if(Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)){
+      showScreen(activeScreen + (dy<0?1:-1), dy<0?'left':'right');
+      lastSwipeTs = Date.now();
+    } else if(Math.abs(dy) <= 8 && Math.abs(dx) <= 8){
+      // 가장자리 단순 탭도 다음 화면으로
+      showScreen(activeScreen+1, 'left');
+      lastSwipeTs = Date.now();
+    }
+    zy=null; zx=null;
+  });
+  zone.addEventListener('click', e=> e.stopPropagation());
 });
 
 // ---------- 시트 열기/닫기 ----------
