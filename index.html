@@ -153,6 +153,23 @@
   .mbtn.big svg{width:30px; height:30px;}
   .mbtn:active svg{fill:var(--ink-dim);}
 
+  /* 날씨 화면 */
+  .weather{display:flex; flex-direction:column; align-items:center; text-align:center; width:100%;}
+  .wx-loc{
+    font-family:'Noto Sans KR',sans-serif; font-size:13px; color:var(--ink-dim);
+    display:flex; align-items:center; gap:4px; margin-bottom:2px;
+  }
+  .wx-temp{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:64px; line-height:1;
+    color:var(--ink); letter-spacing:-1px;
+  }
+  .wx-desc{
+    font-family:'Noto Sans KR',sans-serif; font-size:15px; color:var(--ink); margin-top:6px;
+  }
+  .wx-hilo{
+    font-family:'Noto Sans KR',sans-serif; font-size:12px; color:var(--ink-dim); margin-top:4px;
+  }
+
   /* 인용문 카드 */
   .quotecard{
     margin-top:40px; width:100%; background:transparent;
@@ -279,6 +296,12 @@
     .cal-day{width:11.2cqw; height:11.2cqw; font-size:5.9cqh;}
     .cal-title{font-size:clamp(10px, 4.6vh, 16px); margin-bottom:1vh;}
     .cal-title{font-size:6.1cqh; margin-bottom:1.1cqh;}
+    #weatherScreen{inset:0; display:flex; justify-content:center; align-items:center;}
+    .weather{container-type:size; width:100%; height:100%; justify-content:center;}
+    .wx-loc{font-size:clamp(10px, 4.4vh, 15px); margin-bottom:0.6vh;}
+    .wx-temp{font-size:clamp(48px, 34vh, 130px); line-height:1;}
+    .wx-desc{font-size:clamp(12px, 5.2vh, 18px); margin-top:1vh;}
+    .wx-hilo{font-size:clamp(10px, 4vh, 14px); margin-top:0.6vh;}
     .badge{display:none;}
     .dots{display:none;}
     .btnrow{display:none;}
@@ -346,12 +369,21 @@
           </div>
         </div>
       </div>
+      <div class="screen hidden" id="weatherScreen">
+        <div class="weather" id="weather">
+          <div class="wx-loc" id="wxLoc">현재 위치</div>
+          <div class="wx-temp" id="wxTemp">--°</div>
+          <div class="wx-desc" id="wxDesc">날씨 불러오는 중…</div>
+          <div class="wx-hilo" id="wxHiLo"></div>
+        </div>
+      </div>
     </div>
     <div class="dots">
       <span class="dotind active" data-view="digitalScreen"></span>
       <span class="dotind" data-view="clockScreen"></span>
       <span class="dotind" data-view="calendarScreen"></span>
       <span class="dotind" data-view="mediaScreen"></span>
+      <span class="dotind" data-view="weatherScreen"></span>
     </div>
   </div>
 
@@ -707,7 +739,7 @@ buildCalendar();
 
 // ---------- 시계/날짜 화면 전환 ----------
 const screensEl = document.getElementById('screens');
-const screenIds = ['digitalScreen','clockScreen','calendarScreen','mediaScreen'];
+const screenIds = ['digitalScreen','clockScreen','calendarScreen','mediaScreen','weatherScreen'];
 let activeScreen = 0;
 function showScreen(idx, dir){
   const next = (idx+screenIds.length)%screenIds.length;
@@ -729,6 +761,7 @@ function showScreen(idx, dir){
   setTimeout(()=>{ outEl.classList.remove('from-left','from-right'); }, 460);
   activeScreen = next;
   screensEl.classList.toggle('media-active', screenIds[activeScreen] === 'mediaScreen');
+  if(screenIds[activeScreen] === 'weatherScreen' && !wxLoaded) loadWeather();
   document.querySelectorAll('.dotind').forEach((d,i)=> d.classList.toggle('active', i===activeScreen));
 }
 document.querySelectorAll('.dotind').forEach((d,i)=> d.onclick = ()=> showScreen(i));
@@ -924,6 +957,68 @@ document.getElementById('fileInput').onchange = async (e)=>{
 };
 
 loadUserQuotes();
+
+// ---------- 날씨 (현재 위치, Open-Meteo · API 키 불필요) ----------
+const wxLoc = document.getElementById('wxLoc');
+const wxTemp = document.getElementById('wxTemp');
+const wxDesc = document.getElementById('wxDesc');
+const wxHiLo = document.getElementById('wxHiLo');
+
+// WMO 날씨 코드 → 한글 설명
+const WX_CODES = {
+  0:'맑음', 1:'대체로 맑음', 2:'구름 조금', 3:'흐림',
+  45:'안개', 48:'짙은 안개',
+  51:'약한 이슬비', 53:'이슬비', 55:'강한 이슬비',
+  56:'차가운 이슬비', 57:'강한 차가운 이슬비',
+  61:'약한 비', 63:'비', 65:'강한 비',
+  66:'차가운 비', 67:'강한 차가운 비',
+  71:'약한 눈', 73:'눈', 75:'많은 눈', 77:'싸락눈',
+  80:'약한 소나기', 81:'소나기', 82:'강한 소나기',
+  85:'약한 눈소나기', 86:'강한 눈소나기',
+  95:'천둥번개', 96:'천둥번개(우박)', 99:'강한 천둥번개(우박)'
+};
+
+let wxLoaded = false;
+async function loadWeather(){
+  if(!navigator.geolocation){ wxDesc.textContent='위치 지원 안 됨'; return; }
+  wxDesc.textContent = '위치 확인 중…';
+  navigator.geolocation.getCurrentPosition(async (pos)=>{
+    const {latitude, longitude} = pos.coords;
+    try{
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude='+latitude
+                + '&longitude='+longitude
+                + '&current=temperature_2m,weather_code'
+                + '&daily=temperature_2m_max,temperature_2m_min'
+                + '&timezone=auto&forecast_days=1';
+      const res = await fetch(url);
+      const data = await res.json();
+      const cur = data.current;
+      const daily = data.daily;
+      wxTemp.textContent = Math.round(cur.temperature_2m) + '°';
+      wxDesc.textContent = WX_CODES[cur.weather_code] || '—';
+      if(daily){
+        wxHiLo.textContent = '최고:' + Math.round(daily.temperature_2m_max[0])
+                           + '° 최저:' + Math.round(daily.temperature_2m_min[0]) + '°';
+      }
+      loadLocationName(latitude, longitude);
+      wxLoaded = true;
+    }catch(e){
+      wxDesc.textContent = '날씨 불러오기 실패';
+    }
+  }, (err)=>{
+    wxDesc.textContent = (err.code===1) ? '위치 권한 거부됨' : '위치 확인 실패';
+  }, {enableHighAccuracy:false, timeout:10000, maximumAge:600000});
+}
+
+// 위치 이름 조회 (BigDataCloud 무료 역지오코딩, 키 불필요)
+async function loadLocationName(lat, lon){
+  try{
+    const r = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+lat+'&longitude='+lon+'&localityLanguage=ko');
+    const d = await r.json();
+    const name = d.city || d.locality || d.principalSubdivision || '';
+    if(name) wxLoc.textContent = name;
+  }catch(e){}
+}
 
 // ---------- 미디어 플레이어 (유튜브 IFrame API) ----------
 const albumArt = document.getElementById('albumArt');
