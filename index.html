@@ -111,7 +111,7 @@
   .swipe-zone{position:absolute; top:0; bottom:0; width:0; z-index:5; display:none;}
   .swipe-left{left:0;}
   .swipe-right{right:0;}
-  .screens.media-active .swipe-zone{display:block; width:16%;}
+  .screens.media-active .swipe-zone{display:block; width:30%;}
 
   /* 미디어 플레이어 */
   .player{display:flex; flex-direction:column; align-items:center; width:100%; max-width:220px;}
@@ -122,7 +122,7 @@
   }
   .album img{width:100%; height:100%; object-fit:cover;}
   #ytHolder{position:absolute; inset:0; display:none;}
-  #ytHolder iframe{width:100%; height:100%; border:none;}
+  #ytHolder iframe{width:100%; height:100%; border:none; pointer-events:none;}
   .album.has-video #ytHolder{display:block;}
   .album.has-video .album-ph{display:none;}
   .album-ph{font-size:36px; color:rgba(255,255,255,0.25);}
@@ -1069,9 +1069,9 @@ const ytResult = document.getElementById('ytResult');
 let ytPlayer = null, ytReady = false, hasVideo = false, isPlaylist = false;
 let pendingUrl = null;
 
-// 플레이어 안에서의 터치/클릭이 화면 전환으로 번지지 않게 차단
+// 플레이어 안에서의 탭(클릭)이 화면 전환으로 번지지 않게 차단
+// (touchend는 막지 않음 — 스와이프 제스처가 화면 전환 핸들러에 도달해야 하므로)
 playerEl.addEventListener('click', e=> e.stopPropagation());
-playerEl.addEventListener('touchend', e=> e.stopPropagation());
 
 function fmtTime(sec){
   if(!isFinite(sec)) return '0:00';
