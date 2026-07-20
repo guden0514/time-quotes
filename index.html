@@ -16,6 +16,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Space+Mono:wght@400;700&family=Poppins:wght@600;700;800&family=Inter:wght@500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
   @font-face{
+    font-family:'NanumSquare';
+    src: url('NanumSquareB.woff2') format('woff2');
+    font-weight: 700;
+    font-display: swap;
+  }
+  @font-face{
+    font-family:'NanumSquare';
+    src: url('NanumSquareEB.woff2') format('woff2');
+    font-weight: 800;
+    font-display: swap;
+  }
+  @font-face{
     font-family:'KoPub Batang';
     src: url('KoPubWorld_Batang_Light.woff2') format('woff2');
     font-weight: 300;
@@ -75,12 +87,12 @@
   /* 날짜 메인 화면 */
   .datebig{display:flex; flex-direction:column; align-items:center;}
   .datebig .weekday{
-    font-family:'Inter',sans-serif; font-size:15px; font-weight:700;
+    font-family:'NanumSquare',sans-serif; font-size:15px; font-weight:700;
     color:var(--accent); letter-spacing:3px; margin-bottom:6px;
   }
-  .datebig .weekday .month{color:var(--ink); opacity:0.7; margin-left:8px;}
+  .datebig .weekday .month{color:var(--ink); opacity:0.7; margin-left:8px; font-weight:700;}
   .datebig .daynum{
-    font-family:'Inter',sans-serif; font-weight:800; font-size:110px; line-height:1;
+    font-family:'NanumSquare',sans-serif; font-weight:800; font-size:110px; line-height:1;
     letter-spacing:-2px;
   }
 
