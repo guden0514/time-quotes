@@ -829,6 +829,18 @@ screensEl.addEventListener('click', ()=>{
   showScreen(activeScreen+1, 'left');
 });
 
+// PC 마우스 휠로 화면 전환 (아래로 스크롤=다음, 위로=이전)
+let lastWheelTs = 0;
+screensEl.addEventListener('wheel', (e)=>{
+  if(Math.abs(e.deltaY) < 8) return;
+  e.preventDefault();
+  const now = Date.now();
+  if(now - lastWheelTs < 350) return; // 관성 스크롤 연속 전환 방지
+  lastWheelTs = now;
+  if(e.deltaY > 0) showScreen(activeScreen+1, 'left');   // 아래로 = 다음
+  else showScreen(activeScreen-1, 'right');              // 위로 = 이전
+}, {passive:false});
+
 // ---------- 시트 열기/닫기 ----------
 const addSheet = document.getElementById('addSheet');
 const listSheet = document.getElementById('listSheet');
