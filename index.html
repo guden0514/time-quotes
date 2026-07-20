@@ -51,7 +51,8 @@
 
   /* 가로모드: 좌측 시계/달력, 우측 문장 */
   /* 시계 */
-  .screens{position:relative; width:260px; height:260px; margin-top:8px;}
+  .screens{position:relative; width:260px; height:260px; margin-top:8px; touch-action:none;}
+  .swipe-zone, .screen{touch-action:none;}
   .screen{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     opacity:1; transform:translateX(0) scale(1);
     transition:opacity 0.45s cubic-bezier(.22,.61,.36,1), transform 0.45s cubic-bezier(.22,.61,.36,1); }
@@ -766,44 +767,54 @@ function showScreen(idx, dir){
 }
 document.querySelectorAll('.dotind').forEach((d,i)=> d.onclick = ()=> showScreen(i));
 let lastSwipeTs = 0;
+let swipeConsumed = false; // 한 제스처가 존에서 이미 처리됐는지 표시
+
+// 통합 스와이프 핸들러: 메인 영역 + 가장자리 존 모두에 적용
+function attachSwipe(el, opts){
+  opts = opts || {};
+  let sy=null, sx=null, vertical=false;
+  el.addEventListener('touchstart', e=>{
+    sy = e.touches[0].clientY; sx = e.touches[0].clientX;
+    vertical=false;
+    if(opts.isZone) swipeConsumed = false; // 존에서 새 제스처 시작
+  }, {passive:true});
+  el.addEventListener('touchmove', e=>{
+    if(sy===null) return;
+    const dy = e.touches[0].clientY - sy;
+    const dx = e.touches[0].clientX - sx;
+    if(!vertical && Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)){
+      vertical = true;
+    }
+    if(vertical && e.cancelable) e.preventDefault();
+  }, {passive:false});
+  el.addEventListener('touchend', e=>{
+    if(sy===null) return;
+    const dy = e.changedTouches[0].clientY - sy;
+    const dx = e.changedTouches[0].clientX - sx;
+    // 존이 이미 이 제스처를 처리했으면 메인은 건너뜀
+    if(!opts.isZone && swipeConsumed){ sy=null; sx=null; swipeConsumed=false; return; }
+    if(Math.abs(dy) > 22 && Math.abs(dy) >= Math.abs(dx)){
+      showScreen(activeScreen + (dy<0?1:-1), dy<0?'left':'right');
+      lastSwipeTs = Date.now();
+      if(opts.isZone) swipeConsumed = true;
+    } else if(opts.isZone && opts.tapToNext && Math.abs(dy) <= 8 && Math.abs(dx) <= 8){
+      showScreen(activeScreen+1, 'left');
+      lastSwipeTs = Date.now();
+      swipeConsumed = true;
+    }
+    sy=null; sx=null;
+  });
+}
+
+// 가장자리 존 먼저 등록 (버블링 순서상 존이 먼저 처리)
+[document.getElementById('swipeLeft'), document.getElementById('swipeRight')].forEach(zone=>{
+  attachSwipe(zone, {tapToNext:true, isZone:true});
+  zone.addEventListener('click', e=> e.stopPropagation());
+});
+attachSwipe(screensEl);
 screensEl.addEventListener('click', ()=>{
   if(Date.now() - lastSwipeTs < 500) return; // 스와이프 직후 중복 클릭 무시
   showScreen(activeScreen+1, 'left');
-});
-let touchY=null, touchX=null;
-screensEl.addEventListener('touchstart', e=>{ touchY = e.touches[0].clientY; touchX = e.touches[0].clientX; }, {passive:true});
-screensEl.addEventListener('touchend', e=>{
-  if(touchY===null) return;
-  const dy = e.changedTouches[0].clientY - touchY;
-  const dx = e.changedTouches[0].clientX - touchX;
-  // 세로 이동이 25px 이상이고 가로보다 크면 화면 전환 (양방향 동일 기준)
-  if(Math.abs(dy) > 25 && Math.abs(dy) >= Math.abs(dx)){
-    showScreen(activeScreen + (dy<0?1:-1), dy<0?'left':'right');
-    lastSwipeTs = Date.now();
-  }
-  touchY=null; touchX=null;
-});
-
-// 미디어 화면 등에서 버튼이 터치를 가로채도 스와이프 되도록 가장자리 전용 존
-[document.getElementById('swipeLeft'), document.getElementById('swipeRight')].forEach(zone=>{
-  let zy=null, zx=null;
-  zone.addEventListener('touchstart', e=>{ zy=e.touches[0].clientY; zx=e.touches[0].clientX; }, {passive:true});
-  zone.addEventListener('touchend', e=>{
-    if(zy===null) return;
-    const dy = e.changedTouches[0].clientY - zy;
-    const dx = e.changedTouches[0].clientX - zx;
-    // 세로 스와이프가 우세하면 화면 전환
-    if(Math.abs(dy) > 25 && Math.abs(dy) >= Math.abs(dx)){
-      showScreen(activeScreen + (dy<0?1:-1), dy<0?'left':'right');
-      lastSwipeTs = Date.now();
-    } else if(Math.abs(dy) <= 8 && Math.abs(dx) <= 8){
-      // 가장자리 단순 탭도 다음 화면으로
-      showScreen(activeScreen+1, 'left');
-      lastSwipeTs = Date.now();
-    }
-    zy=null; zx=null;
-  });
-  zone.addEventListener('click', e=> e.stopPropagation());
 });
 
 // ---------- 시트 열기/닫기 ----------
