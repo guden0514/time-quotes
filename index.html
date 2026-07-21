@@ -71,6 +71,33 @@
   }
   .intro.show .intro-text{opacity:1;}
   .intro-text b{font-family:'KoPub Batang',serif; font-weight:700; color:#FFFFFF;}
+
+  /* 이름 입력 화면 */
+  .intro-ask{
+    display:none; flex-direction:column; align-items:center; gap:18px;
+    opacity:0; transition:opacity 0.6s ease;
+  }
+  .intro.asking .intro-ask{display:flex; opacity:1;}
+  .intro.asking{touch-action:auto;}
+  .intro-ask, .intro-input, .intro-btn{touch-action:auto;}
+  .intro.asking .intro-text{display:none;}
+  .intro-ask-label{
+    font-family:'KoPub Batang','Gowun Batang',serif; font-weight:300;
+    color:var(--ink); font-size:clamp(18px, 4.6vw, 26px); line-height:1.6; text-align:center;
+  }
+  .intro-input{
+    background:transparent; border:none; border-bottom:1.5px solid rgba(255,255,255,0.3);
+    color:#FFFFFF; font-family:'KoPub Batang',serif; font-size:22px; font-weight:700;
+    text-align:center; padding:8px 4px; width:min(70vw, 240px); outline:none;
+    transition:border-color 0.2s;
+  }
+  .intro-input:focus{border-bottom-color:var(--accent);}
+  .intro-btn{
+    margin-top:6px; background:var(--accent); color:#fff; border:none; border-radius:22px;
+    font-family:'Noto Sans KR',sans-serif; font-size:15px; font-weight:700;
+    padding:11px 30px; cursor:pointer; transition:opacity 0.2s;
+  }
+  .intro-btn:active{opacity:0.7;}
   body{
     font-family:'Noto Sans KR',sans-serif;
     background-color:#0B0C10;
@@ -368,6 +395,11 @@
 <body>
 
 <div class="intro" id="intro">
+  <div class="intro-ask" id="introAsk">
+    <div class="intro-ask-label">당신의 이름을 알려주세요</div>
+    <input type="text" id="nameInput" class="intro-input" placeholder="이름 입력" maxlength="20" autocomplete="off">
+    <button class="intro-btn" id="nameSubmit">시작하기</button>
+  </div>
   <div class="intro-text" id="introText"></div>
 </div>
 <div class="app">
@@ -547,21 +579,52 @@ https://music.youtube.com/watch?v=... (여러 곡 가능)"></textarea>
 (function runIntro(){
   const intro = document.getElementById('intro');
   const introText = document.getElementById('introText');
+  const introAsk = document.getElementById('introAsk');
+  const nameInput = document.getElementById('nameInput');
+  const nameSubmit = document.getElementById('nameSubmit');
   if(!intro || !introText) return;
-  // 현재 시각 (오전/오후 12시간제, 예: "오후 6시 12분")
-  const now = new Date();
-  let h = now.getHours(), m = now.getMinutes();
-  const ampm = h < 12 ? '오전' : '오후';
-  let h12 = h % 12; if(h12 === 0) h12 = 12;
-  const timeStr = ampm + ' ' + h12 + '시 ' + m + '분';
-  introText.innerHTML = '지금은 <b>' + timeStr + '</b> 이고,<br>저는 <b>시간의 문장</b>입니다.';
-  // 페이드인 → 2초 유지 → 페이드아웃 → 제거
-  requestAnimationFrame(()=> intro.classList.add('show'));
-  setTimeout(()=>{
-    intro.classList.remove('show');
-    intro.classList.add('done');
-    setTimeout(()=> intro.style.display='none', 900);
-  }, 2000 + 800); // 페이드인(0.8s) 후 2초 유지
+
+  const NAME_KEY = 'time-quotes-app:user-name';
+  let savedName = '';
+  try{ savedName = localStorage.getItem(NAME_KEY) || ''; }catch(e){}
+
+  function currentTimeStr(){
+    const now = new Date();
+    let h = now.getHours(), m = now.getMinutes();
+    const ampm = h < 12 ? '오전' : '오후';
+    let h12 = h % 12; if(h12 === 0) h12 = 12;
+    return ampm + ' ' + h12 + '시 ' + m + '분';
+  }
+
+  function showGreeting(name){
+    const timeStr = currentTimeStr();
+    const hello = name ? '안녕하세요, <b>' + name + '</b>님.<br>' : '';
+    introText.innerHTML = hello + '지금은 <b>' + timeStr + '</b> 이고,<br>저는 <b>시간의 문장</b>입니다.';
+    requestAnimationFrame(()=> intro.classList.add('show'));
+    setTimeout(()=>{
+      intro.classList.remove('show');
+      intro.classList.add('done');
+      setTimeout(()=> intro.style.display='none', 900);
+    }, 2000 + 800); // 페이드인(0.8s) 후 2초 유지
+  }
+
+  if(savedName){
+    // 이미 이름이 있으면 바로 인사
+    showGreeting(savedName);
+  } else {
+    // 최초 1회: 이름 입력 받기
+    intro.classList.add('asking');
+    setTimeout(()=> nameInput && nameInput.focus(), 400);
+    function submitName(){
+      const name = (nameInput.value || '').trim();
+      if(name){ try{ localStorage.setItem(NAME_KEY, name); }catch(e){} }
+      intro.classList.remove('asking');
+      // 살짝 텀을 두고 인사말로 전환
+      setTimeout(()=> showGreeting(name), 100);
+    }
+    nameSubmit.addEventListener('click', submitName);
+    nameInput.addEventListener('keydown', e=>{ if(e.key === 'Enter') submitName(); });
+  }
 })();
 
 // ---------- 기본 문장 (제가 직접 쓴 오리지널 문구, 실제 가사 아님) ----------
