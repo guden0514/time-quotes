@@ -82,6 +82,10 @@
     opacity:1; transform:translateX(0) scale(1);
     transition:opacity 0.45s cubic-bezier(.22,.61,.36,1), transform 0.45s cubic-bezier(.22,.61,.36,1); }
   .screen.hidden{opacity:0; pointer-events:none;}
+  /* 회전 중에는 트랜지션 끄기 (레이아웃 재배치 딜레이 방지) */
+  body.rotating .screen,
+  body.rotating * { transition:none !important; }
+
   /* 기본(가로 모드): 상하 슬라이드 */
   .screen.from-right{opacity:0; transform:translateY(28px) scale(0.96);}
   .screen.from-left{opacity:0; transform:translateY(-28px) scale(0.96);}
@@ -778,8 +782,17 @@ function updateOrientationClass(){
   document.body.classList.toggle('portrait', window.innerHeight >= window.innerWidth);
 }
 updateOrientationClass();
-window.addEventListener('resize', updateOrientationClass);
-window.addEventListener('orientationchange', ()=> setTimeout(updateOrientationClass, 100));
+
+// 회전 시: 트랜지션을 잠시 꺼서 레이아웃이 즉시 스냅되도록 (딜레이 제거)
+let rotateTimer = null;
+function handleRotate(){
+  document.body.classList.add('rotating');
+  updateOrientationClass();
+  clearTimeout(rotateTimer);
+  rotateTimer = setTimeout(()=> document.body.classList.remove('rotating'), 250);
+}
+window.addEventListener('resize', handleRotate);
+window.addEventListener('orientationchange', handleRotate);
 
 function showScreen(idx, dir){
   const next = (idx+screenIds.length)%screenIds.length;
