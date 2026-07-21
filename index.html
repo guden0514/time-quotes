@@ -54,6 +54,22 @@
   .badge, .quote-src, .quote-text b.time-hl{ transform:translateZ(0); backface-visibility:hidden; }
   html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden; touch-action:none; overscroll-behavior:none;}
   html{background:#0B0C10;}
+
+  /* 인트로 스플래시 */
+  .intro{
+    position:fixed; inset:0; z-index:100;
+    background:#0B0C10; display:flex; align-items:center; justify-content:center;
+    padding:0 32px; text-align:center;
+    opacity:0; transition:opacity 0.8s ease;
+  }
+  .intro.show{opacity:1;}
+  .intro.done{opacity:0; pointer-events:none;}
+  .intro-text{
+    font-family:'KoPub Batang','Gowun Batang',serif; font-weight:300;
+    color:var(--ink); font-size:clamp(20px, 5vw, 30px); line-height:1.7;
+    word-break:keep-all;
+  }
+  .intro-text b{font-family:'KoPub Batang',serif; font-weight:700; color:#FFFFFF;}
   body{
     font-family:'Noto Sans KR',sans-serif;
     background-color:#0B0C10;
@@ -350,6 +366,9 @@
 </head>
 <body>
 
+<div class="intro" id="intro">
+  <div class="intro-text" id="introText"></div>
+</div>
 <div class="app">
   <div class="leftcol">
     <div class="screens" id="screens">
@@ -523,6 +542,27 @@ https://music.youtube.com/watch?v=... (여러 곡 가능)"></textarea>
 </div>
 
 <script>
+// ---------- 인트로 스플래시 ----------
+(function runIntro(){
+  const intro = document.getElementById('intro');
+  const introText = document.getElementById('introText');
+  if(!intro || !introText) return;
+  // 현재 시각 (오전/오후 12시간제, 예: "오후 6시 12분")
+  const now = new Date();
+  let h = now.getHours(), m = now.getMinutes();
+  const ampm = h < 12 ? '오전' : '오후';
+  let h12 = h % 12; if(h12 === 0) h12 = 12;
+  const timeStr = ampm + ' ' + h12 + '시 ' + m + '분';
+  introText.innerHTML = '지금은 <b>' + timeStr + '</b> 이고,<br>저는 <b>시간의 문장</b>입니다.';
+  // 페이드인 → 2초 유지 → 페이드아웃 → 제거
+  requestAnimationFrame(()=> intro.classList.add('show'));
+  setTimeout(()=>{
+    intro.classList.remove('show');
+    intro.classList.add('done');
+    setTimeout(()=> intro.style.display='none', 900);
+  }, 2000 + 800); // 페이드인(0.8s) 후 2초 유지
+})();
+
 // ---------- 기본 문장 (제가 직접 쓴 오리지널 문구, 실제 가사 아님) ----------
 const DEFAULTS = [
 ["00:00","자정, 하루의 문이 조용히 닫히고 새 하루가 소리 없이 열린다."],
