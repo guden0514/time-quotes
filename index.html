@@ -60,15 +60,16 @@
     position:fixed; inset:0; z-index:100;
     background:#0B0C10; display:flex; align-items:center; justify-content:center;
     padding:0 32px; text-align:center;
-    opacity:0; transition:opacity 0.8s ease;
+    opacity:1; transition:opacity 0.8s ease;
   }
-  .intro.show{opacity:1;}
   .intro.done{opacity:0; pointer-events:none;}
   .intro-text{
     font-family:'KoPub Batang','Gowun Batang',serif; font-weight:300;
     color:var(--ink); font-size:clamp(20px, 5vw, 30px); line-height:1.7;
     word-break:keep-all;
+    opacity:0; transition:opacity 0.8s ease;
   }
+  .intro.show .intro-text{opacity:1;}
   .intro-text b{font-family:'KoPub Batang',serif; font-weight:700; color:#FFFFFF;}
   body{
     font-family:'Noto Sans KR',sans-serif;
