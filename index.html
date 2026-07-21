@@ -87,13 +87,13 @@
   /* 날짜 메인 화면 */
   .datebig{display:flex; flex-direction:column; align-items:center;}
   .datebig .weekday{
-    font-family:'NanumSquare',sans-serif; font-size:15px; font-weight:700;
-    color:var(--accent); letter-spacing:3px; margin-bottom:6px;
+    font-family:'NanumSquare',sans-serif; font-size:18px; font-weight:700;
+    color:var(--accent); letter-spacing:-0.3px; margin-bottom:4px;
   }
-  .datebig .weekday .month{color:var(--ink); opacity:0.7; margin-left:8px; font-weight:700;}
+  .datebig .weekday .month{color:var(--ink); opacity:0.7; margin-left:6px; font-weight:700;}
   .datebig .daynum{
-    font-family:'NanumSquare',sans-serif; font-weight:800; font-size:110px; line-height:1;
-    letter-spacing:-2px;
+    font-family:'NanumSquare',sans-serif; font-weight:800; font-size:110px; line-height:0.95;
+    letter-spacing:-4px;
   }
 
   /* 아날로그 화면 */
@@ -286,10 +286,10 @@
     .rightcol{min-width:0; max-width:none; width:100%; display:flex; flex-direction:column; justify-content:center;}
     .screens{width:100%; max-width:min(100%, 80vh); aspect-ratio:1/1; height:auto; margin-top:0; container-type:size;}
     .clockwrap{width:100%; height:100%;}
-    .datebig .weekday{font-size:clamp(11px, 6.2vh, 24px); letter-spacing:3px; margin-bottom:1.6vh;}
-    .datebig .weekday{font-size:7cqh; margin-bottom:1cqh;}
-    .datebig .daynum{font-size:clamp(80px, 54vh, 200px);}
-    .datebig .daynum{font-size:52cqh;}
+    .datebig .weekday{font-size:clamp(11px, 6.2vh, 24px); letter-spacing:-0.3px; margin-bottom:1.2vh;}
+    .datebig .weekday{font-size:8cqh; margin-bottom:0.6cqh;}
+    .datebig .daynum{font-size:clamp(80px, 54vh, 200px); letter-spacing:-5px; line-height:0.95;}
+    .datebig .daynum{font-size:54cqh;}
     #calendarScreen{width:100%; display:flex; justify-content:center; align-items:center;}
     #mediaScreen{inset:0; display:flex; justify-content:center; align-items:center;}
     .player{max-width:100%;}
