@@ -82,14 +82,12 @@
     opacity:1; transform:translateX(0) scale(1);
     transition:opacity 0.45s cubic-bezier(.22,.61,.36,1), transform 0.45s cubic-bezier(.22,.61,.36,1); }
   .screen.hidden{opacity:0; pointer-events:none;}
-  /* 가로 모드: 상하 슬라이드 */
+  /* 기본(가로 모드): 상하 슬라이드 */
   .screen.from-right{opacity:0; transform:translateY(28px) scale(0.96);}
   .screen.from-left{opacity:0; transform:translateY(-28px) scale(0.96);}
-  /* 세로 모드: 좌우 슬라이드 */
-  @media (orientation: portrait){
-    .screen.from-right{opacity:0; transform:translateX(28px) scale(0.96);}
-    .screen.from-left{opacity:0; transform:translateX(-28px) scale(0.96);}
-  }
+  /* 세로 모드: 좌우 슬라이드 (body.portrait로 JS가 제어) */
+  body.portrait .screen.from-right{opacity:0; transform:translateX(28px) scale(0.96);}
+  body.portrait .screen.from-left{opacity:0; transform:translateX(-28px) scale(0.96);}
 
   /* 날짜 메인 화면 */
   .datebig{display:flex; flex-direction:column; align-items:center;}
@@ -774,6 +772,15 @@ buildCalendar();
 const screensEl = document.getElementById('screens');
 const screenIds = ['digitalScreen','clockScreen','calendarScreen','mediaScreen','weatherScreen'];
 let activeScreen = 0;
+
+// 화면 방향에 따라 body에 portrait 클래스 부여 (좌우/상하 슬라이드 애니메이션 결정)
+function updateOrientationClass(){
+  document.body.classList.toggle('portrait', window.innerHeight >= window.innerWidth);
+}
+updateOrientationClass();
+window.addEventListener('resize', updateOrientationClass);
+window.addEventListener('orientationchange', ()=> setTimeout(updateOrientationClass, 100));
+
 function showScreen(idx, dir){
   const next = (idx+screenIds.length)%screenIds.length;
   if(next === activeScreen && dir===undefined) return;
@@ -805,7 +812,7 @@ let swipeConsumed = false; // 한 제스처가 존에서 이미 처리됐는지 
 function attachSwipe(el, opts){
   opts = opts || {};
   let sy=null, sx=null, locked=false;
-  function isPortrait(){ return window.matchMedia('(orientation: portrait)').matches; }
+  function isPortrait(){ return window.innerHeight >= window.innerWidth; }
   el.addEventListener('touchstart', e=>{
     sy = e.touches[0].clientY; sx = e.touches[0].clientX;
     locked=false;
@@ -868,7 +875,7 @@ function isInteractive(t){
 }
 appEl.addEventListener('touchstart', e=>{
   // 세로 모드에서만 동작 (가로 모드는 screens 핸들러가 담당)
-  const portrait = window.matchMedia('(orientation: portrait)').matches;
+  const portrait = window.innerHeight >= window.innerWidth;
   if(!portrait){ asy=null; return; }
   aSkip = !!isInteractive(e.target);
   if(aSkip){ asy=null; return; }
