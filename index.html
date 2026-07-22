@@ -1095,7 +1095,26 @@ function wheelHandler(e){
   else showScreen(activeScreen-1, 'right');              // 위로 = 이전
 }
 screensEl.addEventListener('wheel', wheelHandler, {passive:false});
-appEl.addEventListener('wheel', wheelHandler, {passive:false});
+// 앱 전체 휠: 단, 문장 카드 위에서는 문장 넘김이 담당하므로 제외
+appEl.addEventListener('wheel', (e)=>{
+  if(e.target.closest('.quotecard')) return; // 문장 카드는 아래 전용 핸들러가 처리
+  wheelHandler(e);
+}, {passive:false});
+
+// 문장 카드 휠: 같은 시각 문장이 여러 개면 휠로 넘김 (자동 순환 정지)
+(function(){
+  const card = document.querySelector('.quotecard');
+  if(!card) return;
+  let lastQWheel = 0;
+  card.addEventListener('wheel', (e)=>{
+    if(quoteCycle.count <= 1) return; // 문장 하나면 아무 것도 안 함 (화면 전환도 안 함)
+    e.preventDefault();
+    const now = Date.now();
+    if(now - lastQWheel < 350) return;
+    lastQWheel = now;
+    cycleQuote(e.deltaY > 0 ? 1 : -1); // 아래로=다음, 위로=이전
+  }, {passive:false});
+})();
 
 // ---------- 시트 열기/닫기 ----------
 const addSheet = document.getElementById('addSheet');
