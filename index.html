@@ -1017,8 +1017,8 @@ screensEl.addEventListener('click', ()=>{
 const appEl = document.querySelector('.app');
 let asy=null, asx=null, aLocked=false, aSkip=false;
 function isInteractive(t){
-  // 버튼, 링크, 입력, 시트, FAB, 미디어 플레이어 컨트롤 위에서 시작한 터치는 스와이프로 처리 안 함
-  return t.closest('button, a, input, textarea, .sheet, .fab, .player, #screens');
+  // 버튼, 링크, 입력, 시트, FAB, 미디어 컨트롤, 문장 카드 위에서 시작한 터치는 화면전환 스와이프로 처리 안 함
+  return t.closest('button, a, input, textarea, .sheet, .fab, .player, #screens, .quotecard');
 }
 appEl.addEventListener('touchstart', e=>{
   // 세로 모드에서만 동작 (가로 모드는 screens 핸들러가 담당)
@@ -1063,7 +1063,8 @@ appEl.addEventListener('touchend', e=>{
     const portrait = window.innerHeight >= window.innerWidth;
     const primary = portrait ? dx : dy;
     const cross = portrait ? dy : dx;
-    if(Math.abs(primary) > 8 && Math.abs(primary) >= Math.abs(cross) && e.cancelable) e.preventDefault();
+    // 주축 우세하면 기본 스크롤 차단 (보조축의 0.6배만 넘으면 주축 제스처로 간주)
+    if(Math.abs(primary) > 6 && Math.abs(primary) >= Math.abs(cross)*0.6 && e.cancelable) e.preventDefault();
   }, {passive:false});
   card.addEventListener('touchend', e=>{
     if(qy===null) return;
@@ -1071,7 +1072,8 @@ appEl.addEventListener('touchend', e=>{
     const portrait = window.innerHeight >= window.innerWidth;
     const primary = portrait ? dx : dy;
     const cross = portrait ? dy : dx;
-    if(quoteCycle.count>1 && Math.abs(primary) > 22 && Math.abs(primary) >= Math.abs(cross)){
+    // 주축 18px 이상 & 보조축의 0.7배 이상이면 문장 넘김 (대각선 스와이프도 허용)
+    if(quoteCycle.count>1 && Math.abs(primary) > 18 && Math.abs(primary) >= Math.abs(cross)*0.7){
       // primary<0(위로/왼쪽) = 다음 문장, >0 = 이전 문장
       if(cycleQuote(primary<0 ? 1 : -1)){
         lastSwipeTs = Date.now(); // 화면 전환 핸들러가 중복 처리하지 않도록
