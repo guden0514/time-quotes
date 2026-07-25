@@ -1419,6 +1419,9 @@ async function loadLocationName(lat, lon){
   }catch(e){}
 }
 
+// 앱 시작 시 미리 날씨를 불러둠 (인트로가 보이는 동안 백그라운드로 준비 → 날씨 탭에서 기다림 없음)
+loadWeather();
+
 // ---------- 미디어 플레이어 (유튜브 IFrame API) ----------
 const albumArt = document.getElementById('albumArt');
 const albumPh = document.getElementById('albumPh');
