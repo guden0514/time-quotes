@@ -1050,9 +1050,14 @@ function attachSwipe(el, opts){
   zone.addEventListener('click', e=> e.stopPropagation());
 });
 attachSwipe(screensEl);
+let pendingTapTimer = null;
+let suppressTapUntil = 0; // 더블탭 직후 합성 click이 화면을 넘기지 않도록 억제
 screensEl.addEventListener('click', ()=>{
   if(Date.now() - lastSwipeTs < 500) return; // 스와이프 직후 중복 클릭 무시
-  showScreen(activeScreen+1, 'left');
+  if(Date.now() < suppressTapUntil) return;  // 더블탭 직후 무시
+  // 더블탭(전체화면 토글)일 수 있으니 잠깐 기다린 뒤 전환
+  clearTimeout(pendingTapTimer);
+  pendingTapTimer = setTimeout(()=>{ showScreen(activeScreen+1, 'left'); }, 260);
 });
 
 // 세로 모드: 화면 전체(문장·여백 포함) 어디서든 스와이프로 전환
@@ -1656,6 +1661,63 @@ window.addEventListener('load', ()=> setTimeout(tryFullscreen, 300));
 // 안 되면 첫 탭에서 강제 시도 (Fullscreen API는 보통 사용자 동작이 있어야 허용됨)
 document.addEventListener('click', tryFullscreen, {once:true});
 document.addEventListener('touchend', tryFullscreen, {once:true});
+
+// ---------- 더블탭으로 전체화면 켜기/끄기 ----------
+function isFullscreenNow(){
+  return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+}
+function toggleFullscreen(){
+  const el = document.documentElement;
+  if(isFullscreenNow()){
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen;
+    if(exit) { const r = exit.call(document); if(r && r.catch) r.catch(()=>{}); }
+  } else {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+    if(req) { const r = req.call(el); if(r && r.catch) r.catch(()=>{}); }
+  }
+}
+(function(){
+  // 버튼·입력·시트 등에서는 더블탭 토글하지 않음 (기존 조작 방해 방지)
+  function isControl(t){
+    return t && t.closest && t.closest('button, a, input, textarea, .sheet, .fab, .intro');
+  }
+  let lastTapTs = 0, lastX = 0, lastY = 0;
+  function onTap(x, y, target){
+    if(isControl(target)) return;
+    const now = Date.now();
+    const near = Math.abs(x - lastX) < 40 && Math.abs(y - lastY) < 40;
+    if(now - lastTapTs < 320 && near){
+      // 더블탭 확정 → 대기 중인 화면 전환 취소하고 전체화면 토글
+      clearTimeout(pendingTapTimer);
+      suppressTapUntil = now + 500; // 이어서 오는 합성 click 무시
+      lastTapTs = 0;
+      toggleFullscreen();
+      return;
+    }
+    lastTapTs = now; lastX = x; lastY = y;
+  }
+  // 모바일: 터치. 스와이프와 구분하기 위해 이동량이 작을 때만 탭으로 인정
+  let sx=0, sy=0;
+  document.addEventListener('touchstart', e=>{
+    if(e.touches.length !== 1) return;
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+  }, {passive:true});
+  document.addEventListener('touchend', e=>{
+    const t = e.changedTouches[0];
+    if(!t) return;
+    if(Math.abs(t.clientX - sx) > 12 || Math.abs(t.clientY - sy) > 12) return; // 스와이프는 무시
+    onTap(t.clientX, t.clientY, e.target);
+  });
+  // PC: 마우스 더블클릭
+  // PC: 마우스 더블클릭 (터치로 이미 처리된 직후면 중복 실행하지 않음)
+  document.addEventListener('dblclick', e=>{
+    if(isControl(e.target)) return;
+    if(Date.now() < suppressTapUntil) return; // 터치 더블탭이 방금 처리함
+    clearTimeout(pendingTapTimer);
+    suppressTapUntil = Date.now() + 500;
+    toggleFullscreen();
+  });
+})();
 </script>
 </body>
 </html>
