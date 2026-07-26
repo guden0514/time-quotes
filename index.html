@@ -1682,31 +1682,38 @@ function toggleFullscreen(){
     return t && t.closest && t.closest('button, a, input, textarea, .sheet, .fab, .intro');
   }
   let lastTapTs = 0, lastX = 0, lastY = 0;
-  function onTap(x, y, target){
-    if(isControl(target)) return;
-    const now = Date.now();
-    const near = Math.abs(x - lastX) < 40 && Math.abs(y - lastY) < 40;
-    if(now - lastTapTs < 320 && near){
-      // 더블탭 확정 → 대기 중인 화면 전환 취소하고 전체화면 토글
-      clearTimeout(pendingTapTimer);
-      suppressTapUntil = now + 500; // 이어서 오는 합성 click 무시
-      lastTapTs = 0;
-      toggleFullscreen();
-      return;
-    }
-    lastTapTs = now; lastX = x; lastY = y;
+  let sx=0, sy=0, handledOnStart=false;
+
+  function fireToggle(){
+    clearTimeout(pendingTapTimer);
+    suppressTapUntil = Date.now() + 500; // 이어서 오는 합성 click 무시
+    lastTapTs = 0;
+    toggleFullscreen();
   }
-  // 모바일: 터치. 스와이프와 구분하기 위해 이동량이 작을 때만 탭으로 인정
-  let sx=0, sy=0;
+
+  // 두 번째 탭은 '손이 닿는 순간' 즉시 실행 → 체감 지연 최소화
   document.addEventListener('touchstart', e=>{
+    handledOnStart = false;
     if(e.touches.length !== 1) return;
-    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    const t = e.touches[0];
+    sx = t.clientX; sy = t.clientY;
+    if(isControl(e.target)) return;
+    const now = Date.now();
+    const near = Math.abs(t.clientX - lastX) < 40 && Math.abs(t.clientY - lastY) < 40;
+    if(now - lastTapTs < 320 && near){
+      handledOnStart = true;
+      fireToggle();
+    }
   }, {passive:true});
+
+  // 첫 번째 탭 기록 (스와이프는 제외)
   document.addEventListener('touchend', e=>{
+    if(handledOnStart){ handledOnStart=false; return; }
     const t = e.changedTouches[0];
     if(!t) return;
+    if(isControl(e.target)) return;
     if(Math.abs(t.clientX - sx) > 12 || Math.abs(t.clientY - sy) > 12) return; // 스와이프는 무시
-    onTap(t.clientX, t.clientY, e.target);
+    lastTapTs = Date.now(); lastX = t.clientX; lastY = t.clientY;
   });
   // PC: 마우스 더블클릭
   // PC: 마우스 더블클릭 (터치로 이미 처리된 직후면 중복 실행하지 않음)
